@@ -124,7 +124,7 @@
             background-color: var(--danger-color);
             color: var(--white-color);
             border: none;
-            padding: 0.5rem 0.8rem;
+            padding: 0.4rem 0.5rem;
             border-radius: 4px;
             cursor: pointer;
         }
@@ -152,6 +152,15 @@
         .notification.show {
             opacity: 1;
             visibility: visible;
+        }
+
+        /* スマートフォン表示用の設定 */
+        @media screen and (max-width: 600px) {
+            #history-table th,
+            #history-table td {
+                font-size: 0.8rem;
+                padding: 0.5rem 0.3rem;
+            }
         }
     </style>
     <link rel="manifest" href="manifest.json">
