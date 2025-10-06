@@ -1,11 +1,11 @@
 {
   "name": "燃費記録アプリ",
   "short_name": "燃費記録",
-  "start_url": "/index.html",
+  "start_url": "/fuelLog/index.html",
   "display": "standalone",
   "background_color": "#f4f7f6",
   "theme_color": "#4A90E2",
-  "description": "シンプルな燃費記録Webアプリケーションです。",
+  "description": "燃費記録Webアプリケーションです。",
   "icons": [
     {
       "src": "icon.png",
