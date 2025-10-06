@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>燃費記録アプリ</title>
+    <meta name="theme-color" content="#4A90E2" />
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --background-color: #f4f7f6;
+            --text-color: #333;
+            --white-color: #fff;
+            --border-color: #ddd;
+            --danger-color: #e74c3c;
+            --success-color: #2ecc71;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            padding: 0.3rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        main {
+            padding: 1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        section {
+            background: var(--white-color);
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+        }
+
+
+        .form-group {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        label {
+            width: 140px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        input[type="datetime-local"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .submit-button {
+            width: 100%;
+            padding: 1rem;
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            border: none;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .submit-button:hover {
+            background-color: #357ABD;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        #history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        #history-table th,
+        #history-table td {
+            padding: 0.8rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #history-table th {
+            background-color: #f2f2f2;
+        }
+
+        .delete-button {
+            background-color: var(--danger-color);
+            color: var(--white-color);
+            border: none;
+            padding: 0.5rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .delete-button:hover {
+            background-color: #c0392b;
+        }
+
+        .notification {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--success-color);
+            color: var(--white-color);
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+
+        .notification.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+</head>
+
+<body>
+    <header>
+        <h1>燃費記録</h1>
+    </header>
+
+    <main>
+        <div id="notification" class="notification"></div>
+
+        <section id="input-form">
+            <form id="fuel-form">
+                <div class="form-group">
+                    <label for="date">日付</label>
+                    <input type="datetime-local" id="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="odometer">総走行距離 (km)</label>
+                    <input type="number" id="odometer" placeholder="例: 50000" min="1" step="any" inputmode="numeric"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label for="volume">給油量 (L)</label>
+                    <input type="number" id="volume" placeholder="例: 30.5" min="0.01" step="any" inputmode="decimal"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label for="is-full">満タン？</label>
+                    <select id="is-full">
+                        <option value="true">満タンまで給油</option>
+                        <option value="false">満タンではない</option>
+                    </select>
+                </div>
+                <button type="submit" class="submit-button">登録</button>
+            </form>
+        </section>
+
+        <section id="history">
+            <div class="table-container">
+                <table id="history-table">
+                    <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>総走行距離(km)</th>
+                            <th>給油量(L)</th>
+                            <th>満</th>
+                            <th>燃費(km/L)</th>
+                            <th>削</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // PWA Service Workerの登録
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('Service worker registered:', reg))
+                    .catch(err => console.log('Service worker registration failed:', err));
+            });
+        }
+
+        // IndexedDBの設定
+        const DB_NAME = 'FuelLogDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'logs';
+        let db;
+
+        function initDB() {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+            request.onerror = (event) => {
+                console.error('Database error:', event.target.errorCode);
+            };
+
+            request.onsuccess = (event) => {
+                db = event.target.result;
+                console.log('Database opened successfully');
+                loadHistory();
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                store.createIndex('date', 'date', { unique: false });
+                store.createIndex('odometer', 'odometer', { unique: true });
+            };
+        }
+
+        // 通知表示
+        const notification = document.getElementById('notification');
+        function showNotification(message, duration = 3000) {
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+
+        // フォームとテーブルの要素取得
+        const form = document.getElementById('fuel-form');
+        const dateInput = document.getElementById('date');
+        const odometerInput = document.getElementById('odometer');
+        const volumeInput = document.getElementById('volume');
+        const isFullInput = document.getElementById('is-full');
+        const historyTableBody = document.querySelector('#history-table tbody');
+
+        // 日付のデフォルト値を現在日時に設定
+        function setDefaultDate() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            dateInput.value = now.toISOString().slice(0, 16);
+        }
+
+        // フォーム送信時の処理
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            // バリデーション
+            const date = dateInput.value;
+            const odometer = parseFloat(odometerInput.value);
+            const volume = parseFloat(volumeInput.value);
+            const isFull = isFullInput.value === 'true';
+
+            if (!date || !odometer || !volume) {
+                showNotification('必須項目をすべて入力してください。', 3000);
+                return;
+            }
+            if (odometer <= 0 || volume <= 0) {
+                showNotification('走行距離と給油量は0より大きい数値を入力してください。', 3000);
+                return;
+            }
+
+            const latestLog = await getLatestLog();
+            if (latestLog && odometer <= latestLog.odometer) {
+                showNotification(`総走行距離は前回(${latestLog.odometer}km)より大きい数値を入力してください。`, 4000);
+                return;
+            }
+
+            // 燃費計算
+            let fuelEconomy = null;
+            if (isFull) {
+                const { distance, totalVolume } = await calculateFuelData(odometer, volume);
+                if (distance !== null && totalVolume > 0) {
+                    fuelEconomy = distance / totalVolume;
+                }
+            }
+
+            const newLog = {
+                date: new Date(date),
+                odometer: odometer,
+                volume: volume,
+                isFull: isFull,
+                fuelEconomy: fuelEconomy
+            };
+
+            addLog(newLog);
+            form.reset();
+            setDefaultDate();
+        });
+
+        // 最新のログを取得
+        function getLatestLog() {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    resolve(null);
+                    return;
+                }
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.openCursor(null, 'prev');
+                request.onsuccess = (event) => {
+                    resolve(event.target.result ? event.target.result.value : null);
+                };
+                request.onerror = (event) => {
+                    reject('Error fetching latest log:', event.target.errorCode);
+                };
+            });
+        }
+
+        // 燃費計算用のデータ取得
+        function calculateFuelData(currentOdometer, currentVolume) {
+            return new Promise((resolve) => {
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+
+                request.onsuccess = (event) => {
+                    const allLogs = event.target.result.sort((a, b) => b.odometer - a.odometer);
+                    const lastFullTankLog = allLogs.find(log => log.isFull);
+
+                    if (!lastFullTankLog) {
+                        resolve({ distance: null, totalVolume: null }); // 最初の満タン給油
+                        return;
+                    }
+
+                    const distance = currentOdometer - lastFullTankLog.odometer;
+                    let volumeSinceLastFull = currentVolume;
+
+                    // 前回の満タンから今回の登録までの間の給油量を取得
+                    const logsBetween = allLogs.filter(log => log.odometer > lastFullTankLog.odometer && log.odometer < currentOdometer);
+                    logsBetween.forEach(log => {
+                        volumeSinceLastFull += log.volume;
+                    });
+
+                    resolve({ distance, totalVolume: volumeSinceLastFull });
+                };
+                request.onerror = () => resolve({ distance: null, totalVolume: null });
+            });
+        }
+
+
+        // データ登録
+        function addLog(log) {
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.add(log);
+
+            request.onsuccess = () => {
+                console.log('Log added successfully');
+                loadHistory();
+                showNotification('登録しました');
+            };
+
+            request.onerror = (event) => {
+                console.error('Error adding log:', event.target.errorCode);
+                showNotification('登録に失敗しました。');
+            };
+        }
+
+        // 履歴表示
+        function loadHistory() {
+            const transaction = db.transaction(STORE_NAME, 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.getAll();
+
+            request.onsuccess = (event) => {
+                const logs = event.target.result.sort((a, b) => b.date - a.date);
+                historyTableBody.innerHTML = ''; // テーブルをクリア
+
+                logs.forEach(log => {
+                    const row = historyTableBody.insertRow();
+
+                    const date = new Date(log.date);
+                    row.insertCell(0).textContent = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+                    row.insertCell(1).textContent = log.odometer.toLocaleString();
+                    row.insertCell(2).textContent = log.volume.toFixed(2);
+                    row.insertCell(3).textContent = log.isFull ? '満' : '-';
+                    row.insertCell(4).textContent = log.fuelEconomy ? log.fuelEconomy.toFixed(2) : '-';
+
+                    const deleteCell = row.insertCell(5);
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = '削';
+                    deleteButton.className = 'delete-button';
+                    deleteButton.onclick = () => deleteLog(log.id, log.date, log.odometer);
+                    deleteCell.appendChild(deleteButton);
+                });
+            };
+        }
+
+        // データ削除
+        function deleteLog(id, date, odometer) {
+            const formattedDate = new Date(date).toLocaleDateString('ja-JP');
+            const message = `${formattedDate}の${odometer.toLocaleString()}kmを削除しますか？`;
+
+            if (confirm(message)) {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(id);
+
+                request.onsuccess = () => {
+                    console.log('Log deleted successfully');
+                    loadHistory();
+                    showNotification('削除しました');
+                };
+
+                request.onerror = (event) => {
+                    console.error('Error deleting log:', event.target.errorCode);
+                    showNotification('削除に失敗しました。');
+                };
+            }
+        }
+
+        // 初期化処理
+        document.addEventListener('DOMContentLoaded', () => {
+            initDB();
+            setDefaultDate();
+        });
+    </script>
+</body>
+
+</html>
